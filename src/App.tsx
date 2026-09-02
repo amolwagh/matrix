@@ -29,6 +29,13 @@ export default function App() {
   const [modal, setModal] = useState<ModalState | null>(null)
   const [hideCompleted, setHideCompleted] = useState(false)
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [dark, setDark] = useState<boolean>(() => localStorage.getItem('em_dark') === 'true')
+
+  // Apply the saved preference on mount and keep <html> + localStorage in sync.
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('em_dark', String(dark))
+  }, [dark])
 
   const allTags = useMemo(
     () => [...new Set(tasks.flatMap((t) => t.tags ?? []))].sort((a, b) => a.localeCompare(b)),
@@ -114,8 +121,8 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-100 text-gray-900">
-      <header className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
+    <div className="flex min-h-screen flex-col bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <header className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6 dark:border-gray-700 dark:bg-gray-900">
         <h1 className="text-lg font-bold tracking-tight">Eisenhower Matrix</h1>
         <ViewToggle
           view={view}
@@ -125,6 +132,8 @@ export default function App() {
           activeTag={activeTag}
           tags={allTags}
           onActiveTagChange={setActiveTag}
+          dark={dark}
+          onDarkChange={setDark}
         />
       </header>
 
@@ -138,7 +147,7 @@ export default function App() {
           onDragCancel={() => setActiveTask(null)}
         >
           {view === 'matrix' ? (
-            <div className="grid grid-cols-2 grid-rows-2 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
+            <div className="grid grid-cols-2 grid-rows-2 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
               {QUADRANTS.map((q, i) => (
                 <QuadrantPanel
                   key={q.id}
@@ -150,7 +159,7 @@ export default function App() {
                   activeTask={activeTask}
                   hideCompleted={hideCompleted}
                   activeTag={activeTag}
-                  className={`${MATRIX_DIVIDERS[i]} border-gray-300`}
+                  className={`${MATRIX_DIVIDERS[i]} border-gray-300 dark:border-gray-700`}
                 />
               ))}
             </div>
