@@ -20,6 +20,7 @@ import { ViewToggle } from './components/ViewToggle'
 import { ArchiveView } from './components/ArchiveView'
 import { AddTaskModal } from './components/AddTaskModal'
 import { BulkActionBar } from './components/BulkActionBar'
+import PinGate from './components/PinGate'
 
 type ModalState = { mode: 'add'; quadrant: Quadrant } | { mode: 'edit'; task: Task }
 
@@ -233,6 +234,7 @@ export default function App() {
   }
 
   return (
+    <PinGate>
     <div className="flex min-h-screen flex-col bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <header className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6 dark:border-gray-700 dark:bg-gray-900">
         <h1 className="text-lg font-bold tracking-tight">Eisenhower Matrix</h1>
@@ -356,5 +358,6 @@ export default function App() {
         />
       )}
     </div>
+    </PinGate>
   )
 }
