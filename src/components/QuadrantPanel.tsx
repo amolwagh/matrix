@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Calendar, GripVertical, Plus, StickyNote } from 'lucide-react'
+import { Archive, Calendar, GripVertical, Plus, StickyNote } from 'lucide-react'
 import { format } from 'date-fns'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable } from '@dnd-kit/sortable'
@@ -13,27 +13,33 @@ export type QuadrantPanelProps = {
   onAdd: () => void
   onEdit: (task: Task) => void
   onToggle: (id: string) => void
+  onArchive?: (id: string) => void
   activeTask?: Task | null
   hideCompleted?: boolean
   activeTag?: string | null
   className?: string
+  selectedIds?: Set<string>
+  onToggleSelect?: (id: string) => void
 }
 
 type TaskCardProps = {
   task: Task
   onEdit?: (task: Task) => void
   onToggle?: (id: string) => void
+  onArchive?: (id: string) => void
   dragHandle?: ReactNode
+  selectionCheckbox?: ReactNode
 }
 
-export function TaskCardBody({ task, onEdit, onToggle, dragHandle }: TaskCardProps) {
+export function TaskCardBody({ task, onEdit, onToggle, onArchive, dragHandle, selectionCheckbox }: TaskCardProps) {
   const overdue = task.dueDate !== undefined && !task.done && task.dueDate < Date.now()
   const hasMeta =
     task.dueDate !== undefined || task.note !== undefined || (task.tags?.length ?? 0) > 0
 
   return (
-    <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm">
+    <div className="group rounded-md border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-start gap-2.5">
+        {selectionCheckbox}
         <input
           type="checkbox"
           checked={task.done}
@@ -46,11 +52,22 @@ export function TaskCardBody({ task, onEdit, onToggle, dragHandle }: TaskCardPro
           onClick={() => onEdit?.(task)}
           title="Edit task"
           className={`min-w-0 flex-1 truncate text-left text-sm font-medium ${
-            task.done ? 'text-gray-400 line-through opacity-60' : 'text-gray-800 hover:text-gray-600'
+            task.done ? 'text-gray-400 line-through opacity-60' : 'text-gray-800 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-300'
           }`}
         >
           {task.title}
         </button>
+        {task.done && onArchive && (
+          <button
+            type="button"
+            onClick={() => onArchive(task.id)}
+            title="Archive task"
+            className="-m-1 shrink-0 rounded p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            aria-label={`Archive "${task.title}"`}
+          >
+            <Archive className="h-4 w-4" />
+          </button>
+        )}
         {dragHandle}
       </div>
 
@@ -59,7 +76,7 @@ export function TaskCardBody({ task, onEdit, onToggle, dragHandle }: TaskCardPro
           {task.dueDate !== undefined && (
             <span
               className={`flex items-center gap-1 text-xs ${
-                overdue ? 'font-semibold text-red-600' : 'text-gray-500'
+                overdue ? 'font-semibold text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               <Calendar className="h-3.5 w-3.5" />
@@ -68,12 +85,12 @@ export function TaskCardBody({ task, onEdit, onToggle, dragHandle }: TaskCardPro
           )}
           {task.note !== undefined && (
             <StickyNote
-              className={`h-3.5 w-3.5 ${task.done ? 'text-gray-400' : 'text-gray-500'}`}
+              className={`h-3.5 w-3.5 ${task.done ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}
               aria-label="Has note"
             />
           )}
           {(task.tags ?? []).map((tag) => (
-            <span key={tag} className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
+            <span key={tag} className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
               {tag}
             </span>
           ))}
@@ -83,8 +100,10 @@ export function TaskCardBody({ task, onEdit, onToggle, dragHandle }: TaskCardPro
   )
 }
 
-function SortableTaskCard({ task, onEdit, onToggle }: Omit<TaskCardProps, 'dragHandle'>) {
+function SortableTaskCard({ task, onEdit, onToggle, onArchive, selectedIds, onToggleSelect }: { task: Task; onEdit?: (task: Task) => void; onToggle?: (id: string) => void; onArchive?: (id: string) => void; selectedIds?: Set<string>; onToggleSelect?: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const selectionMode = (selectedIds?.size ?? 0) > 0
+  const isSelected = selectedIds?.has(task.id) ?? false
 
   return (
     <div
@@ -96,13 +115,24 @@ function SortableTaskCard({ task, onEdit, onToggle }: Omit<TaskCardProps, 'dragH
         task={task}
         onEdit={onEdit}
         onToggle={onToggle}
+        onArchive={onArchive}
+        selectionCheckbox={onToggleSelect ? (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect(task.id)}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label={`Select "${task.title}"`}
+            className={`mt-0.5 h-4 w-4 shrink-0 accent-gray-700 transition-opacity ${selectionMode ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+          />
+        ) : undefined}
         dragHandle={
           <button
             type="button"
             {...attributes}
             {...listeners}
             aria-label={`Reorder "${task.title}"`}
-            className="-m-1 shrink-0 cursor-grab touch-none rounded p-1 text-gray-400 hover:text-gray-600 active:cursor-grabbing"
+            className="-m-1 shrink-0 cursor-grab touch-none rounded p-1 text-gray-400 hover:text-gray-600 active:cursor-grabbing dark:hover:text-gray-300"
           >
             <GripVertical className="h-4 w-4" />
           </button>
@@ -112,11 +142,12 @@ function SortableTaskCard({ task, onEdit, onToggle }: Omit<TaskCardProps, 'dragH
   )
 }
 
-export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, activeTask = null, hideCompleted = false, activeTag = null, className = '' }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, onArchive, activeTask = null, hideCompleted = false, activeTag = null, className = '', selectedIds, onToggleSelect }: QuadrantPanelProps) {
   const cfg = QUADRANT_MAP[quadrant]
   const Icon = cfg.icon
   const visible = tasks
     .filter((t) => {
+      if (t.archived) return false
       if (hideCompleted && t.done) return false
       if (activeTag && !(t.tags ?? []).includes(activeTag)) return false
       return true
@@ -128,11 +159,11 @@ export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, active
   const zoneHighlighted = isOver && activeTask !== null && activeTask.quadrant !== quadrant
 
   return (
-    <section className={`flex min-h-0 flex-col ${cfg.bg} ${className}`}>
+    <section className={`flex min-h-0 flex-col ${cfg.bg} dark:bg-gray-900 ${className}`}>
       <header className="flex items-center gap-2 px-4 py-3">
         <Icon className={`h-5 w-5 shrink-0 ${cfg.accent}`} />
-        <h2 className="truncate text-sm font-semibold tracking-wide text-gray-800">{cfg.label}</h2>
-        <span className="ml-auto rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-gray-600">
+        <h2 className="truncate text-sm font-semibold tracking-wide text-gray-800 dark:text-gray-200">{cfg.label}</h2>
+        <span className="ml-auto rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700/80 dark:text-gray-300">
           {visible.length === tasks.length ? visible.length : `${visible.length}/${tasks.length}`}
         </span>
       </header>
@@ -148,7 +179,7 @@ export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, active
         ) : (
           <SortableContext items={visible.map((t) => t.id)}>
             {visible.map((task) => (
-              <SortableTaskCard key={task.id} task={task} onEdit={onEdit} onToggle={onToggle} />
+              <SortableTaskCard key={task.id} task={task} onEdit={onEdit} onToggle={onToggle} onArchive={onArchive} selectedIds={selectedIds} onToggleSelect={onToggleSelect} />
             ))}
           </SortableContext>
         )}
@@ -157,7 +188,7 @@ export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, active
       <button
         type="button"
         onClick={onAdd}
-        className="m-3 mt-1 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-gray-300 py-2 text-sm font-medium text-gray-500 transition-colors hover:border-gray-400 hover:bg-white/60 hover:text-gray-700"
+        className="m-3 mt-1 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-gray-300 py-2 text-sm font-medium text-gray-500 transition-colors hover:border-gray-400 hover:bg-white/60 hover:text-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-200"
       >
         <Plus className="h-4 w-4" /> Add task
       </button>
