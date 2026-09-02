@@ -1,6 +1,6 @@
 export type Quadrant = 'do-first' | 'strategic' | 'quick-wins' | 'review'
 
-export type ViewMode = 'matrix' | 'lanes'
+export type ViewMode = 'matrix' | 'lanes' | 'archive'
 
 export type Task = {
   id: string
@@ -11,6 +11,7 @@ export type Task = {
   note?: string
   dueDate?: number // timestamp (ms)
   tags?: string[]
+  archived?: boolean
   order: number // sort order within quadrant
 }
 
