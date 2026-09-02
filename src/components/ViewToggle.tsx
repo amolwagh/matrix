@@ -1,4 +1,4 @@
-import { AlignJustify, Eye, EyeOff, LayoutGrid, Tags } from 'lucide-react'
+import { AlignJustify, Eye, EyeOff, LayoutGrid, Moon, Sun, Tags } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { ViewMode } from '../types'
 
@@ -10,6 +10,8 @@ export type ViewToggleProps = {
   activeTag: string | null
   tags: readonly string[]
   onActiveTagChange: (tag: string | null) => void
+  dark: boolean
+  onDarkChange: (value: boolean) => void
 }
 
 const OPTIONS: ReadonlyArray<{ id: ViewMode; label: string; icon: LucideIcon }> = [
@@ -25,13 +27,15 @@ export function ViewToggle({
   activeTag,
   tags,
   onActiveTagChange,
+  dark,
+  onDarkChange,
 }: ViewToggleProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div
         role="group"
         aria-label="View mode"
-        className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1"
+        className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-gray-800"
       >
         {OPTIONS.map(({ id, label, icon: Icon }) => (
           <button
@@ -40,7 +44,7 @@ export function ViewToggle({
             onClick={() => onChange(id)}
             aria-pressed={view === id}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
-              view === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+              view === id ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-gray-100' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
             }`}
           >
             <Icon className="h-4 w-4" />
@@ -56,8 +60,8 @@ export function ViewToggle({
         title="Hide completed tasks"
         className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
           hideCompleted
-            ? 'border-blue-600 bg-blue-50 text-blue-700'
-            : 'border-gray-200 bg-gray-100 text-gray-500 hover:text-gray-800'
+            ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950 dark:text-blue-300'
+            : 'border-gray-200 bg-gray-100 text-gray-500 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
         }`}
       >
         {hideCompleted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -67,15 +71,15 @@ export function ViewToggle({
       {tags.length > 0 && (
         <label
           className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2 py-1 ${
-            activeTag ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-gray-100'
+            activeTag ? 'border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-950' : 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800'
           }`}
         >
-          <Tags className="h-4 w-4 text-gray-500" />
+          <Tags className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           <select
             value={activeTag ?? ''}
             onChange={(e) => onActiveTagChange(e.target.value || null)}
             aria-label="Filter by tag"
-            className="cursor-pointer bg-transparent text-xs font-medium text-gray-700 outline-none sm:text-sm"
+            className="cursor-pointer bg-transparent text-xs font-medium text-gray-700 outline-none sm:text-sm dark:text-gray-300"
           >
             <option value="">All tags</option>
             {tags.map((tag) => (
@@ -86,6 +90,21 @@ export function ViewToggle({
           </select>
         </label>
       )}
+
+      <button
+        type="button"
+        onClick={() => onDarkChange(!dark)}
+        aria-pressed={dark}
+        title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
+          dark
+            ? 'border-indigo-400 bg-indigo-500/20 text-indigo-300'
+            : 'border-gray-200 bg-gray-100 text-gray-500 hover:text-gray-800'
+        }`}
+      >
+        {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        <span className="hidden sm:inline">{dark ? 'Light mode' : 'Dark mode'}</span>
+      </button>
     </div>
   )
 }

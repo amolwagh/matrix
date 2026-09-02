@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Download } from 'lucide-react'
 import type { Quadrant, Task, TaskDraft, ViewMode } from './types'
 import { loadView, saveView } from './lib/storage'
 import { QUADRANTS } from './lib/quadrants'
@@ -24,11 +25,21 @@ type ModalState = { mode: 'add'; quadrant: Quadrant } | { mode: 'edit'; task: Ta
 const MATRIX_DIVIDERS = ['border-r-2 border-b-2', 'border-b-2', 'border-r-2', '']
 
 export default function App() {
-  const { tasks, addTask, updateTask, deleteTask, toggleDone, reorderTasks, moveToQuadrant } = useTasks()
+  const { tasks, addTask, updateTask, deleteTask, toggleDone, reorderTasks, moveToQuadrant, importTasks } = useTasks()
   const [view, setView] = useState<ViewMode>(loadView)
   const [modal, setModal] = useState<ModalState | null>(null)
   const [hideCompleted, setHideCompleted] = useState(false)
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [dark, setDark] = useState<boolean>(() => localStorage.getItem('em_dark') === 'true')
+
+  // Apply the saved preference on mount and keep <html> + localStorage in sync.
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('em_dark', String(dark))
+  }, [dark])
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const allTags = useMemo(
     () => [...new Set(tasks.flatMap((t) => t.tags ?? []))].sort((a, b) => a.localeCompare(b)),
@@ -54,6 +65,51 @@ export default function App() {
     setModal(null)
   }
 
+  const handleExport = () => {
+    const json = JSON.stringify(tasks, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'eisenhower-backup.json'
+    a.click()
+    URL.revokeObjectURL(url)
+    setMenuOpen(false)
+  }
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result))
+        if (!Array.isArray(parsed)) throw new Error('Invalid format')
+        const validQuadrants: Quadrant[] = ['do-first', 'strategic', 'quick-wins', 'review']
+        const valid = parsed.every(
+          (t: unknown) =>
+            t !== null &&
+            typeof t === 'object' &&
+            'id' in t &&
+            typeof (t as { id: unknown }).id === 'string' &&
+            'title' in t &&
+            typeof (t as { title: unknown }).title === 'string' &&
+            'quadrant' in t &&
+            validQuadrants.includes((t as { quadrant: unknown }).quadrant as Quadrant),
+        )
+        if (!valid) throw new Error('Invalid task shape')
+        if (!window.confirm('This will replace all tasks. Continue?')) return
+        importTasks(parsed as Task[])
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Import failed')
+      } finally {
+        setMenuOpen(false)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+      }
+    }
+    reader.readAsText(file)
+  }
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (modal) return
@@ -73,6 +129,17 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [modal])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [menuOpen])
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const [activeTask, setActiveTask] = useState<Task | null>(null)
@@ -114,18 +181,58 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-100 text-gray-900">
-      <header className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
+    <div className="flex min-h-screen flex-col bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <header className="flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6 dark:border-gray-700 dark:bg-gray-900">
         <h1 className="text-lg font-bold tracking-tight">Eisenhower Matrix</h1>
-        <ViewToggle
-          view={view}
-          onChange={changeView}
-          hideCompleted={hideCompleted}
-          onHideCompletedChange={setHideCompleted}
-          activeTag={activeTag}
-          tags={allTags}
-          onActiveTagChange={setActiveTag}
-        />
+        <div className="flex items-center gap-2">
+          <div ref={menuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100"
+              aria-label="Backup options"
+              title="Backup options"
+            >
+              <Download size={18} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full z-20 mt-1 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Export JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Import JSON
+                </button>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+          </div>
+          <ViewToggle
+            view={view}
+            onChange={changeView}
+            hideCompleted={hideCompleted}
+            onHideCompletedChange={setHideCompleted}
+            activeTag={activeTag}
+            tags={allTags}
+            onActiveTagChange={setActiveTag}
+            dark={dark}
+            onDarkChange={setDark}
+          />
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-6">
@@ -138,7 +245,7 @@ export default function App() {
           onDragCancel={() => setActiveTask(null)}
         >
           {view === 'matrix' ? (
-            <div className="grid grid-cols-2 grid-rows-2 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
+            <div className="grid grid-cols-2 grid-rows-2 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
               {QUADRANTS.map((q, i) => (
                 <QuadrantPanel
                   key={q.id}
@@ -150,7 +257,7 @@ export default function App() {
                   activeTask={activeTask}
                   hideCompleted={hideCompleted}
                   activeTag={activeTag}
-                  className={`${MATRIX_DIVIDERS[i]} border-gray-300`}
+                  className={`${MATRIX_DIVIDERS[i]} border-gray-300 dark:border-gray-700`}
                 />
               ))}
             </div>
