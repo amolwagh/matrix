@@ -17,6 +17,7 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { QuadrantPanel, TaskCardBody } from './components/QuadrantPanel'
 import { LaneView } from './components/LaneView'
 import { ViewToggle } from './components/ViewToggle'
+import { ArchiveView } from './components/ArchiveView'
 import { AddTaskModal } from './components/AddTaskModal'
 
 type ModalState = { mode: 'add'; quadrant: Quadrant } | { mode: 'edit'; task: Task }
@@ -25,7 +26,8 @@ type ModalState = { mode: 'add'; quadrant: Quadrant } | { mode: 'edit'; task: Ta
 const MATRIX_DIVIDERS = ['border-r-2 border-b-2', 'border-b-2', 'border-r-2', '']
 
 export default function App() {
-  const { tasks, addTask, updateTask, deleteTask, toggleDone, reorderTasks, moveToQuadrant, importTasks } = useTasks()
+  const { tasks, addTask, updateTask, deleteTask, toggleDone, reorderTasks, moveToQuadrant, importTasks, archiveTask, restoreTask, clearArchive } = useTasks()
+  const activeTasks = tasks.filter((t) => !t.archived)
   const [view, setView] = useState<ViewMode>(loadView)
   const [modal, setModal] = useState<ModalState | null>(null)
   const [hideCompleted, setHideCompleted] = useState(false)
@@ -43,14 +45,15 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const allTags = useMemo(
-    () => [...new Set(tasks.flatMap((t) => t.tags ?? []))].sort((a, b) => a.localeCompare(b)),
-    [tasks],
+    () => [...new Set(activeTasks.flatMap((t) => t.tags ?? []))].sort((a, b) => a.localeCompare(b)),
+    [activeTasks],
   )
 
   const filteredTasks = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
-    if (!q) return tasks
     return tasks.filter((t) => {
+      if (t.archived) return false
+      if (!q) return true
       if (t.title.toLowerCase().includes(q)) return true
       if ((t.note ?? '').toLowerCase().includes(q)) return true
       if ((t.tags ?? []).some((tag) => tag.toLowerCase().includes(q))) return true
@@ -158,7 +161,7 @@ export default function App() {
 
   // Board-level drag handling: reorder within a quadrant, or move across quadrants.
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveTask(tasks.find((t) => t.id === event.active.id) ?? null)
+    setActiveTask(activeTasks.find((t) => t.id === event.active.id) ?? null)
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -167,12 +170,12 @@ export default function App() {
     if (!over || active.id === over.id) return
     const overId = over.id
 
-    const dragged = tasks.find((t) => t.id === active.id)
+    const dragged = activeTasks.find((t) => t.id === active.id)
     if (!dragged) return
 
     // Target quadrant: the hovered task's quadrant, or a quadrant drop zone.
     let targetQuadrant: Quadrant | null = null
-    const overTask = tasks.find((t) => t.id === overId)
+    const overTask = activeTasks.find((t) => t.id === overId)
     if (overTask) {
       targetQuadrant = overTask.quadrant
     } else if (QUADRANTS.some((q) => q.id === overId)) {
@@ -182,7 +185,7 @@ export default function App() {
 
     if (targetQuadrant === dragged.quadrant) {
       // Same quadrant: reorder. Dropping on the zone means "move to end".
-      const sorted = tasks.filter((t) => t.quadrant === targetQuadrant).sort((a, b) => a.order - b.order)
+      const sorted = activeTasks.filter((t) => t.quadrant === targetQuadrant).sort((a, b) => a.order - b.order)
       const fromIndex = sorted.findIndex((t) => t.id === dragged.id)
       const toIndex = overTask ? sorted.findIndex((t) => t.id === overTask.id) : sorted.length - 1
       if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return
@@ -259,7 +262,14 @@ export default function App() {
           onDragEnd={handleDragEnd}
           onDragCancel={() => setActiveTask(null)}
         >
-          {view === 'matrix' ? (
+          {view === 'archive' ? (
+            <ArchiveView
+              tasks={tasks}
+              onRestore={restoreTask}
+              onDelete={deleteTask}
+              onClearArchive={clearArchive}
+            />
+          ) : view === 'matrix' ? (
             <div className="grid grid-cols-2 grid-rows-2 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
               {QUADRANTS.map((q, i) => (
                 <QuadrantPanel
@@ -269,6 +279,7 @@ export default function App() {
                   onAdd={() => openAdd(q.id)}
                   onEdit={openEdit}
                   onToggle={toggleDone}
+                  onArchive={archiveTask}
                   activeTask={activeTask}
                   hideCompleted={hideCompleted}
                   activeTag={activeTag}
@@ -277,7 +288,7 @@ export default function App() {
               ))}
             </div>
           ) : (
-            <LaneView tasks={filteredTasks} onAdd={openAdd} onEdit={openEdit} onToggle={toggleDone} activeTask={activeTask} hideCompleted={hideCompleted} activeTag={activeTag} />
+            <LaneView tasks={filteredTasks} onAdd={openAdd} onEdit={openEdit} onToggle={toggleDone} onArchive={archiveTask} activeTask={activeTask} hideCompleted={hideCompleted} activeTag={activeTag} />
           )}
 
           <DragOverlay>{activeTask ? <TaskCardBody task={activeTask} /> : null}</DragOverlay>

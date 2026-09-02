@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Calendar, GripVertical, Plus, StickyNote } from 'lucide-react'
+import { Archive, Calendar, GripVertical, Plus, StickyNote } from 'lucide-react'
 import { format } from 'date-fns'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable } from '@dnd-kit/sortable'
@@ -13,6 +13,7 @@ export type QuadrantPanelProps = {
   onAdd: () => void
   onEdit: (task: Task) => void
   onToggle: (id: string) => void
+  onArchive?: (id: string) => void
   activeTask?: Task | null
   hideCompleted?: boolean
   activeTag?: string | null
@@ -23,10 +24,11 @@ type TaskCardProps = {
   task: Task
   onEdit?: (task: Task) => void
   onToggle?: (id: string) => void
+  onArchive?: (id: string) => void
   dragHandle?: ReactNode
 }
 
-export function TaskCardBody({ task, onEdit, onToggle, dragHandle }: TaskCardProps) {
+export function TaskCardBody({ task, onEdit, onToggle, onArchive, dragHandle }: TaskCardProps) {
   const overdue = task.dueDate !== undefined && !task.done && task.dueDate < Date.now()
   const hasMeta =
     task.dueDate !== undefined || task.note !== undefined || (task.tags?.length ?? 0) > 0
@@ -51,6 +53,17 @@ export function TaskCardBody({ task, onEdit, onToggle, dragHandle }: TaskCardPro
         >
           {task.title}
         </button>
+        {task.done && onArchive && (
+          <button
+            type="button"
+            onClick={() => onArchive(task.id)}
+            title="Archive task"
+            className="-m-1 shrink-0 rounded p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            aria-label={`Archive "${task.title}"`}
+          >
+            <Archive className="h-4 w-4" />
+          </button>
+        )}
         {dragHandle}
       </div>
 
@@ -83,7 +96,7 @@ export function TaskCardBody({ task, onEdit, onToggle, dragHandle }: TaskCardPro
   )
 }
 
-function SortableTaskCard({ task, onEdit, onToggle }: Omit<TaskCardProps, 'dragHandle'>) {
+function SortableTaskCard({ task, onEdit, onToggle, onArchive }: Omit<TaskCardProps, 'dragHandle'>) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
   return (
@@ -96,6 +109,7 @@ function SortableTaskCard({ task, onEdit, onToggle }: Omit<TaskCardProps, 'dragH
         task={task}
         onEdit={onEdit}
         onToggle={onToggle}
+        onArchive={onArchive}
         dragHandle={
           <button
             type="button"
@@ -112,11 +126,12 @@ function SortableTaskCard({ task, onEdit, onToggle }: Omit<TaskCardProps, 'dragH
   )
 }
 
-export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, activeTask = null, hideCompleted = false, activeTag = null, className = '' }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, onArchive, activeTask = null, hideCompleted = false, activeTag = null, className = '' }: QuadrantPanelProps) {
   const cfg = QUADRANT_MAP[quadrant]
   const Icon = cfg.icon
   const visible = tasks
     .filter((t) => {
+      if (t.archived) return false
       if (hideCompleted && t.done) return false
       if (activeTag && !(t.tags ?? []).includes(activeTag)) return false
       return true
@@ -148,7 +163,7 @@ export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, active
         ) : (
           <SortableContext items={visible.map((t) => t.id)}>
             {visible.map((task) => (
-              <SortableTaskCard key={task.id} task={task} onEdit={onEdit} onToggle={onToggle} />
+              <SortableTaskCard key={task.id} task={task} onEdit={onEdit} onToggle={onToggle} onArchive={onArchive} />
             ))}
           </SortableContext>
         )}

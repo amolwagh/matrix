@@ -21,7 +21,7 @@ export function saveTasks(tasks: Task[]): void {
 
 export function loadView(): ViewMode {
   const raw = localStorage.getItem(VIEW_KEY)
-  return raw === 'lanes' ? 'lanes' : 'matrix'
+  return raw === 'lanes' || raw === 'archive' ? raw : 'matrix'
 }
 
 export function saveView(view: ViewMode): void {
