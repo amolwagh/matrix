@@ -327,7 +327,7 @@ export default function App() {
               ))}
             </div>
           ) : (
-            <LaneView tasks={filteredTasks} onAdd={openAdd} onEdit={openEdit} onToggle={toggleDone} onArchive={archiveTask} activeTask={activeTask} hideCompleted={hideCompleted} activeTag={activeTag} />
+            <LaneView tasks={filteredTasks} onAdd={openAdd} onEdit={openEdit} onToggle={toggleDone} onArchive={archiveTask} activeTask={activeTask} hideCompleted={hideCompleted} activeTag={activeTag} selectedIds={selected} onToggleSelect={toggleSelected} />
           )}
 
           <DragOverlay>{activeTask ? <TaskCardBody task={activeTask} /> : null}</DragOverlay>
