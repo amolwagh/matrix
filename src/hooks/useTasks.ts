@@ -59,5 +59,22 @@ export function useTasks() {
     ])
   }
 
-  return { tasks, addTask, updateTask, deleteTask, toggleDone, reorderTasks, moveToQuadrant }
+  const importTasks = (imported: Task[]) => {
+    sync(imported)
+  }
+
+  const archiveTask = (id: string) =>
+    updateTask(id, { archived: true, done: true })
+
+  const restoreTask = (id: string) =>
+    updateTask(id, { archived: false, done: false })
+
+  const clearArchive = () => {
+    const archived = tasks.filter((t) => t.archived)
+    if (archived.length === 0) return
+    if (!window.confirm(`Delete all ${archived.length} archived tasks? This cannot be undone.`)) return
+    sync(tasks.filter((t) => !t.archived))
+  }
+
+  return { tasks, addTask, updateTask, deleteTask, toggleDone, reorderTasks, moveToQuadrant, importTasks, archiveTask, restoreTask, clearArchive }
 }

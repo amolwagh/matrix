@@ -29,7 +29,7 @@ function dueDateToTimestamp(value: string): number | undefined {
 }
 
 const fieldClass =
-  'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100'
+  'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/30'
 
 export function AddTaskModal({ mode, task, defaultQuadrant, onSave, onClose, onDelete }: AddTaskModalProps) {
   const [title, setTitle] = useState(task?.title ?? '')
@@ -62,26 +62,26 @@ export function AddTaskModal({ mode, task, defaultQuadrant, onSave, onClose, onD
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 dark:bg-black/60" onMouseDown={onClose}>
       <form
         onSubmit={handleSubmit}
         onMouseDown={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-5 shadow-xl"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-5 shadow-xl dark:bg-gray-900"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">{mode === 'add' ? 'Add task' : 'Edit task'}</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{mode === 'add' ? 'Add task' : 'Edit task'}</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
             Title *
             <input
               autoFocus
@@ -93,7 +93,7 @@ export function AddTaskModal({ mode, task, defaultQuadrant, onSave, onClose, onD
             />
           </label>
 
-          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
             Quadrant
             <select value={quadrant} onChange={(e) => setQuadrant(e.target.value as Quadrant)} className={fieldClass}>
               {QUADRANTS.map((q) => (
@@ -104,17 +104,17 @@ export function AddTaskModal({ mode, task, defaultQuadrant, onSave, onClose, onD
             </select>
           </label>
 
-          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
             Due date
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldClass} />
           </label>
 
-          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
             Note
             <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional details…" className={`${fieldClass} resize-none`} />
           </label>
 
-          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
             Tags
             <input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="work, home (comma separated)" className={fieldClass} />
           </label>
@@ -125,7 +125,7 @@ export function AddTaskModal({ mode, task, defaultQuadrant, onSave, onClose, onD
             <button
               type="button"
               onClick={() => onDelete(task.id)}
-              className="rounded-md px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+              className="rounded-md px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
             >
               Delete
             </button>
@@ -134,7 +134,7 @@ export function AddTaskModal({ mode, task, defaultQuadrant, onSave, onClose, onD
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
             >
               Cancel
             </button>
