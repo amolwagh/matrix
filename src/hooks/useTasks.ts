@@ -59,5 +59,9 @@ export function useTasks() {
     ])
   }
 
-  return { tasks, addTask, updateTask, deleteTask, toggleDone, reorderTasks, moveToQuadrant }
+  const importTasks = (imported: Task[]) => {
+    sync(imported)
+  }
+
+  return { tasks, addTask, updateTask, deleteTask, toggleDone, reorderTasks, moveToQuadrant, importTasks }
 }
