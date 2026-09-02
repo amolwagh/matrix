@@ -19,6 +19,7 @@ import { LaneView } from './components/LaneView'
 import { ViewToggle } from './components/ViewToggle'
 import { ArchiveView } from './components/ArchiveView'
 import { AddTaskModal } from './components/AddTaskModal'
+import { BulkActionBar } from './components/BulkActionBar'
 
 type ModalState = { mode: 'add'; quadrant: Quadrant } | { mode: 'edit'; task: Task }
 
@@ -33,6 +34,7 @@ export default function App() {
   const [hideCompleted, setHideCompleted] = useState(false)
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [dark, setDark] = useState<boolean>(() => localStorage.getItem('em_dark') === 'true')
 
   // Apply the saved preference on mount and keep <html> + localStorage in sync.
@@ -123,6 +125,41 @@ export default function App() {
       }
     }
     reader.readAsText(file)
+  }
+
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const clearSelected = () => setSelected(new Set())
+
+  const bulkMove = (quadrant: Quadrant) => {
+    selected.forEach((id) => moveToQuadrant(id, quadrant))
+    clearSelected()
+  }
+
+  const bulkDone = () => {
+    selected.forEach((id) => updateTask(id, { done: true }))
+    clearSelected()
+  }
+
+  const bulkArchive = () => {
+    selected.forEach((id) => archiveTask(id))
+    clearSelected()
+  }
+
+  const bulkDelete = () => {
+    if (!window.confirm(`Delete ${selected.size} selected task(s)? This cannot be undone.`)) return
+    selected.forEach((id) => deleteTask(id))
+    clearSelected()
   }
 
   useEffect(() => {
@@ -283,6 +320,8 @@ export default function App() {
                   activeTask={activeTask}
                   hideCompleted={hideCompleted}
                   activeTag={activeTag}
+                  selectedIds={selected}
+                  onToggleSelect={toggleSelected}
                   className={`${MATRIX_DIVIDERS[i]} border-gray-300 dark:border-gray-700`}
                 />
               ))}
@@ -303,6 +342,17 @@ export default function App() {
           onSave={handleSave}
           onClose={() => setModal(null)}
           onDelete={handleDelete}
+        />
+      )}
+
+      {selected.size > 0 && (
+        <BulkActionBar
+          count={selected.size}
+          onMove={bulkMove}
+          onDone={bulkDone}
+          onArchive={bulkArchive}
+          onDelete={bulkDelete}
+          onClear={clearSelected}
         />
       )}
     </div>

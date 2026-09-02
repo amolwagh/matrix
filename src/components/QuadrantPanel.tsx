@@ -18,6 +18,8 @@ export type QuadrantPanelProps = {
   hideCompleted?: boolean
   activeTag?: string | null
   className?: string
+  selectedIds?: Set<string>
+  onToggleSelect?: (id: string) => void
 }
 
 type TaskCardProps = {
@@ -26,16 +28,18 @@ type TaskCardProps = {
   onToggle?: (id: string) => void
   onArchive?: (id: string) => void
   dragHandle?: ReactNode
+  selectionCheckbox?: ReactNode
 }
 
-export function TaskCardBody({ task, onEdit, onToggle, onArchive, dragHandle }: TaskCardProps) {
+export function TaskCardBody({ task, onEdit, onToggle, onArchive, dragHandle, selectionCheckbox }: TaskCardProps) {
   const overdue = task.dueDate !== undefined && !task.done && task.dueDate < Date.now()
   const hasMeta =
     task.dueDate !== undefined || task.note !== undefined || (task.tags?.length ?? 0) > 0
 
   return (
-    <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div className="group rounded-md border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-start gap-2.5">
+        {selectionCheckbox}
         <input
           type="checkbox"
           checked={task.done}
@@ -96,8 +100,10 @@ export function TaskCardBody({ task, onEdit, onToggle, onArchive, dragHandle }: 
   )
 }
 
-function SortableTaskCard({ task, onEdit, onToggle, onArchive }: Omit<TaskCardProps, 'dragHandle'>) {
+function SortableTaskCard({ task, onEdit, onToggle, onArchive, selectedIds, onToggleSelect }: { task: Task; onEdit?: (task: Task) => void; onToggle?: (id: string) => void; onArchive?: (id: string) => void; selectedIds?: Set<string>; onToggleSelect?: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const selectionMode = (selectedIds?.size ?? 0) > 0
+  const isSelected = selectedIds?.has(task.id) ?? false
 
   return (
     <div
@@ -110,6 +116,16 @@ function SortableTaskCard({ task, onEdit, onToggle, onArchive }: Omit<TaskCardPr
         onEdit={onEdit}
         onToggle={onToggle}
         onArchive={onArchive}
+        selectionCheckbox={onToggleSelect ? (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect(task.id)}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label={`Select "${task.title}"`}
+            className={`mt-0.5 h-4 w-4 shrink-0 accent-gray-700 transition-opacity ${selectionMode ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+          />
+        ) : undefined}
         dragHandle={
           <button
             type="button"
@@ -126,7 +142,7 @@ function SortableTaskCard({ task, onEdit, onToggle, onArchive }: Omit<TaskCardPr
   )
 }
 
-export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, onArchive, activeTask = null, hideCompleted = false, activeTag = null, className = '' }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, onArchive, activeTask = null, hideCompleted = false, activeTag = null, className = '', selectedIds, onToggleSelect }: QuadrantPanelProps) {
   const cfg = QUADRANT_MAP[quadrant]
   const Icon = cfg.icon
   const visible = tasks
@@ -163,7 +179,7 @@ export function QuadrantPanel({ quadrant, tasks, onAdd, onEdit, onToggle, onArch
         ) : (
           <SortableContext items={visible.map((t) => t.id)}>
             {visible.map((task) => (
-              <SortableTaskCard key={task.id} task={task} onEdit={onEdit} onToggle={onToggle} onArchive={onArchive} />
+              <SortableTaskCard key={task.id} task={task} onEdit={onEdit} onToggle={onToggle} onArchive={onArchive} selectedIds={selectedIds} onToggleSelect={onToggleSelect} />
             ))}
           </SortableContext>
         )}
