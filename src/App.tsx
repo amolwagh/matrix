@@ -30,6 +30,7 @@ export default function App() {
   const [modal, setModal] = useState<ModalState | null>(null)
   const [hideCompleted, setHideCompleted] = useState(false)
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [dark, setDark] = useState<boolean>(() => localStorage.getItem('em_dark') === 'true')
 
   // Apply the saved preference on mount and keep <html> + localStorage in sync.
@@ -45,6 +46,17 @@ export default function App() {
     () => [...new Set(tasks.flatMap((t) => t.tags ?? []))].sort((a, b) => a.localeCompare(b)),
     [tasks],
   )
+
+  const filteredTasks = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return tasks
+    return tasks.filter((t) => {
+      if (t.title.toLowerCase().includes(q)) return true
+      if ((t.note ?? '').toLowerCase().includes(q)) return true
+      if ((t.tags ?? []).some((tag) => tag.toLowerCase().includes(q))) return true
+      return false
+    })
+  }, [tasks, searchQuery])
 
   const changeView = (next: ViewMode) => {
     setView(next)
@@ -231,6 +243,9 @@ export default function App() {
             onActiveTagChange={setActiveTag}
             dark={dark}
             onDarkChange={setDark}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchCount={filteredTasks.length}
           />
         </div>
       </header>
@@ -250,7 +265,7 @@ export default function App() {
                 <QuadrantPanel
                   key={q.id}
                   quadrant={q.id}
-                  tasks={tasks.filter((t) => t.quadrant === q.id)}
+                  tasks={filteredTasks.filter((t) => t.quadrant === q.id)}
                   onAdd={() => openAdd(q.id)}
                   onEdit={openEdit}
                   onToggle={toggleDone}
@@ -262,7 +277,7 @@ export default function App() {
               ))}
             </div>
           ) : (
-            <LaneView tasks={tasks} onAdd={openAdd} onEdit={openEdit} onToggle={toggleDone} activeTask={activeTask} hideCompleted={hideCompleted} activeTag={activeTag} />
+            <LaneView tasks={filteredTasks} onAdd={openAdd} onEdit={openEdit} onToggle={toggleDone} activeTask={activeTask} hideCompleted={hideCompleted} activeTag={activeTag} />
           )}
 
           <DragOverlay>{activeTask ? <TaskCardBody task={activeTask} /> : null}</DragOverlay>
