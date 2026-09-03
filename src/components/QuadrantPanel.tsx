@@ -36,8 +36,26 @@ export function TaskCardBody({ task, onEdit, onToggle, onArchive, dragHandle, se
   const hasMeta =
     task.dueDate !== undefined || task.note !== undefined || (task.tags?.length ?? 0) > 0
 
+  const getAgingLevel = (createdAt: number): 'fresh' | 'aging' | 'stale' => {
+    const days = (Date.now() - createdAt) / (1000 * 60 * 60 * 24)
+    if (days < 2) return 'fresh'
+    if (days <= 5) return 'aging'
+    return 'stale'
+  }
+
+  const agingLevel = !task.done ? getAgingLevel(task.createdAt) : 'fresh'
+  const borderClass =
+    agingLevel === 'aging' ? 'border-l-4 border-l-amber-400' : 
+    agingLevel === 'stale' ? 'border-l-4 border-l-red-500' : ''
+  
+  const daysInQuadrant = Math.floor((Date.now() - task.createdAt) / (1000 * 60 * 60 * 24))
+  const tooltip = agingLevel !== 'fresh' && !task.done ? `${daysInQuadrant} days in this quadrant` : undefined
+
   return (
-    <div className="group rounded-md border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div 
+      title={tooltip}
+      className={`group rounded-md border ${borderClass} border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800`}
+    >
       <div className="flex items-start gap-2.5">
         {selectionCheckbox}
         <input
