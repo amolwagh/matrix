@@ -28,8 +28,15 @@ export function useTasks() {
   const deleteTask = (id: string) =>
     sync(tasks.filter((t) => t.id !== id))
 
-  const toggleDone = (id: string) =>
-    updateTask(id, { done: !tasks.find((t) => t.id === id)?.done })
+  const toggleDone = (id: string) => {
+    const task = tasks.find((t) => t.id === id)
+    if (!task) return
+    const isNowDone = !task.done
+    updateTask(id, { 
+      done: isNowDone,
+      completedAt: isNowDone ? Date.now() : undefined
+    })
+  }
 
   // Move a task within its quadrant and reassign sequential order values.
   const reorderTasks = (quadrant: Quadrant, fromIndex: number, toIndex: number) => {
