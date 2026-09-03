@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlignJustify, Archive, Eye, EyeOff, LayoutGrid, Moon, Search, Sun, Tags } from 'lucide-react'
+import { AlignJustify, Archive, BarChart2, Eye, EyeOff, LayoutGrid, Moon, Search, Sun, Tags } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { ViewMode } from '../types'
 
@@ -22,6 +22,7 @@ const OPTIONS: ReadonlyArray<{ id: ViewMode; label: string; icon: LucideIcon }> 
   { id: 'matrix', label: 'Matrix', icon: LayoutGrid },
   { id: 'lanes', label: 'Lanes', icon: AlignJustify },
   { id: 'archive', label: 'Archive', icon: Archive },
+  { id: 'stats', label: 'Stats', icon: BarChart2 },
 ]
 
 export function ViewToggle({
