@@ -22,6 +22,7 @@ import { AddTaskModal } from './components/AddTaskModal'
 import { BulkActionBar } from './components/BulkActionBar'
 import PinGate from './components/PinGate'
 import { StatsView } from './components/StatsView'
+import { QuickCapture } from './components/QuickCapture'
 
 type ModalState = { mode: 'add'; quadrant: Quadrant } | { mode: 'edit'; task: Task }
 
@@ -360,6 +361,8 @@ export default function App() {
           onClear={clearSelected}
         />
       )}
+      <QuickCapture />
+      <QuickCapture />
     </div>
     </PinGate>
   )
