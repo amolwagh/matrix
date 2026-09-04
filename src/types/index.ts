@@ -1,6 +1,6 @@
 export type Quadrant = 'do-first' | 'strategic' | 'quick-wins' | 'review'
 
-export type ViewMode = 'matrix' | 'lanes' | 'archive'
+export type ViewMode = 'matrix' | 'lanes' | 'archive' | 'stats'
 
 export type Task = {
   id: string
@@ -8,6 +8,7 @@ export type Task = {
   quadrant: Quadrant
   createdAt: number // Date.now()
   done: boolean
+  completedAt?: number
   note?: string
   dueDate?: number // timestamp (ms)
   tags?: string[]

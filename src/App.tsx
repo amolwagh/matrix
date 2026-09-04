@@ -21,6 +21,7 @@ import { ArchiveView } from './components/ArchiveView'
 import { AddTaskModal } from './components/AddTaskModal'
 import { BulkActionBar } from './components/BulkActionBar'
 import PinGate from './components/PinGate'
+import { StatsView } from './components/StatsView'
 
 type ModalState = { mode: 'add'; quadrant: Quadrant } | { mode: 'edit'; task: Task }
 
@@ -328,6 +329,8 @@ export default function App() {
                 />
               ))}
             </div>
+          ) : view === 'stats' ? (
+            <StatsView tasks={tasks} />
           ) : (
             <LaneView tasks={filteredTasks} onAdd={openAdd} onEdit={openEdit} onToggle={toggleDone} onArchive={archiveTask} activeTask={activeTask} hideCompleted={hideCompleted} activeTag={activeTag} selectedIds={selected} onToggleSelect={toggleSelected} />
           )}
